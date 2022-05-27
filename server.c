@@ -95,15 +95,15 @@ int main(int argc, char *argv[])
             sprintf(server_message, "ERR Richiesto un comando\n");
             send(client_sock, server_message, strlen(server_message), 0);
         }
-        if (strcmp(tempString, "QUIT") == 0)
+        if (strcmp(token, "QUIT") == 0)
         {
             sprintf(server_message, "QUIT Alla prossima!\n");
             send(client_sock, server_message, strlen(server_message), 0);
             break;
         }
-        if (strcmp(tempString, "WORD") != 0)
+        if (strcmp(token, "WORD") != 0)
         {
-            sprintf(server_message, "ERR Comando '%s' sconosciuto\n", tempString);
+            sprintf(server_message, "ERR Comando '%s' sconosciuto\n", token);
             send(client_sock, server_message, strlen(server_message), 0);
         }
         token = strtok(NULL, " ");
@@ -111,13 +111,13 @@ int main(int argc, char *argv[])
             sprintf(server_message, "ERR Richiesta una parola\n");
             send(client_sock, server_message, strlen(server_message), 0);
         }
-        if (strlen(tempString)!=5)
+        if (strlen(token)!=5)
         {
             sprintf(server_message, "ERR la parola deve essere di 5 caratteri\n");
             send(client_sock, server_message, strlen(server_message), 0);
             break;
         }
-        if(strcmp(tempString, parole[parola])==0) {
+        if(strcmp(token, parole[parola])==0) {
             sprintf(server_message, "OK PERFECT\n");
             send(client_sock, server_message, strlen(server_message), 0);
             break;
