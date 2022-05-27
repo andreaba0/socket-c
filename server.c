@@ -6,6 +6,27 @@
 #include <stdlib.h>
 #include <time.h>
 
+int isLastWord(char **dest, char *string)
+{
+    free(*dest);
+    if (string == NULL)
+    {
+        *dest = NULL;
+        return -1;
+    };
+    if (string[strlen(string) - 1] == '\n')
+    {
+        *dest = malloc(strlen(string) - 1);
+        strncpy(*dest, string, strlen(string) - 1);
+        return 1;
+    }
+    else
+    {
+        *dest = strdup(string);
+        return 0;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
@@ -77,6 +98,7 @@ int main(int argc, char *argv[])
         printf("Errore nell'invio del messaggio\n");
     }
     int parola = rand() % 6;
+    printf("p: %d\n", parola);
 
     for (int i = 0; i < maxTentativi + 1; i++)
     {
@@ -90,8 +112,10 @@ int main(int argc, char *argv[])
         }
         recv(client_sock, client_message, sizeof(client_message), 0);
         char *tempString = strdup(client_message);
-        char *token = strtok(tempString, " ");
-        if(token==NULL) {
+        char *token = NULL;
+        int status = isLastWord(&token, strtok(tempString, " "));
+        if (status == -1 || status == 1)
+        {
             sprintf(server_message, "ERR Richiesto un comando\n");
             send(client_sock, server_message, strlen(server_message), 0);
         }
@@ -106,23 +130,44 @@ int main(int argc, char *argv[])
             sprintf(server_message, "ERR Comando '%s' sconosciuto\n", token);
             send(client_sock, server_message, strlen(server_message), 0);
         }
-        token = strtok(NULL, " ");
-        if(token==NULL) {
+        status = isLastWord(&token, strtok(NULL, " "));
+        printf("p: %s\n", token);
+        if (status != 1)
+        {
             sprintf(server_message, "ERR Richiesta una parola\n");
             send(client_sock, server_message, strlen(server_message), 0);
         }
-        if (strlen(token)!=5)
+        if (strlen(token) != 5)
         {
             sprintf(server_message, "ERR la parola deve essere di 5 caratteri\n");
             send(client_sock, server_message, strlen(server_message), 0);
             break;
         }
-        if(strcmp(token, parole[parola])==0) {
+        if (strcmp(token, parole[parola]) == 0)
+        {
             sprintf(server_message, "OK PERFECT\n");
             send(client_sock, server_message, strlen(server_message), 0);
             break;
         }
-        sprintf(server_message, "OK %d _____\n", i);
+        char res[6];
+        memset(res, '\0', sizeof(res));
+        for(int j=0;j<strlen(token);j++) {
+            if(token[j]==parole[parola][j]) {
+                res[j]='*';
+                continue;
+            }
+            int k;
+            for(k=0;k<strlen(parole[parola]);k++) {
+                if(token[j]==parole[parola][k]) {
+                    res[j]='+';
+                    break;
+                }
+            }
+            if(k!=strlen(parole[parola])) continue;
+            res[j]='_';
+        }
+        if(res[5]=='\0') printf("corretto\n");
+        sprintf(server_message, "OK %d %s\n", i + 1, res);
         send(client_sock, server_message, strlen(server_message), 0);
     }
 

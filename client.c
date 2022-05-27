@@ -5,6 +5,27 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+int isLastWord(char **dest, char *string)
+{
+    free(*dest);
+    if (string == NULL)
+    {
+        *dest = NULL;
+        return -1;
+    };
+    if (string[strlen(string) - 1] == '\n')
+    {
+        *dest = malloc(strlen(string) - 1);
+        strncpy(*dest, string, strlen(string) - 1);
+        return 1;
+    }
+    else
+    {
+        *dest = strdup(string);
+        return 0;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -44,22 +65,26 @@ int main(int argc, char *argv[])
         return -1;
     }
     printf("Connected with server successfully\n");
+    int status;
+    char *token = NULL;
+    char tempString[6];
+    memset(tempString, '\0', sizeof(tempString));
 
     recv(socket_desc, server_message, sizeof(server_message), 0);
-    char *tempString = strdup(server_message);
-    char *token = strtok(tempString, " ");
-    token = strtok(NULL, " ");
+    status = isLastWord(&token, strtok(strdup(server_message), " "));
+    status = isLastWord(&token, strtok(NULL, " "));
     int maxTentativi = atoi(token);
     printf("Inizio del Gioco\n");
     printf("Numero di tentativi: %d\n", maxTentativi);
-    token = strtok(NULL, " ");
     printf("Messaggio dal server: ");
-    while (token != NULL)
+    status = isLastWord(&token, strtok(NULL, " "));
+    while (status != -1)
     {
-        printf("%s", token);
-        token = strtok(NULL, " ");
-        if (token != NULL)
-            printf(" ");
+        if (status == 1)
+            printf("%s\n", token);
+        else if (status == 0)
+            printf("%s ", token);
+        status = isLastWord(&token, strtok(NULL, " "));
     }
 
     int scelta;
@@ -79,30 +104,68 @@ int main(int argc, char *argv[])
         case 1:
             printf("Parola: ");
             scanf("%s", tempString);
-            sprintf(client_message, "WORD %s", tempString);
+            sprintf(client_message, "WORD %s\n", tempString);
             send(socket_desc, client_message, strlen(client_message), 0);
             recv(socket_desc, server_message, sizeof(server_message), 0);
-            printf("Server: %s\n", server_message);
-            //tempString = strdup(server_message);
-            //token = strtok(tempString, " ");
+            status = isLastWord(&token, strtok(strdup(server_message), " "));
+            if (strcmp(token, "ERR") == 0)
+            {
+                printf("Errore: ");
+                status = isLastWord(&token, strtok(NULL, " "));
+                while (status != -1)
+                {
+                    if (status == 1)
+                        printf("%s\n", token);
+                    else if (status == 0)
+                        printf("%s ", token);
+                    status = isLastWord(&token, strtok(NULL, " "));
+                }
+                scelta = 2;
+                break;
+            }
+            if (strcmp(token, "END") == 0)
+            {
+                printf("Numvero tentativi raggiunto\n");
+                status = isLastWord(&token, strtok(NULL, " "));
+                while (status != -1)
+                {
+                    if (status == 1)
+                        printf("%s\n", token);
+                    else if (status == 0)
+                        printf("%s ", token);
+                    status = isLastWord(&token, strtok(NULL, " "));
+                }
+                scelta = 2;
+                break;
+            }
+            status = isLastWord(&token, strtok(NULL, " "));
+            if (strcmp(token, "PERFECT") == 0)
+            {
+                printf("Parola indovinata\n");
+                scelta = 2;
+                break;
+            }
+            printf("Numero tentativo: %d/%d\n", atoi(token), maxTentativi);
+            status = isLastWord(&token, strtok(NULL, " "));
+            printf("Parola: %s\n", token);
             break;
         case 2:
             printf("Uscita in corso\n");
-            sprintf(client_message, "QUIT");
+            sprintf(client_message, "QUIT\n");
             send(socket_desc, client_message, strlen(client_message), 0);
             recv(socket_desc, server_message, sizeof(server_message), 0);
-            tempString = strdup(server_message);
-            token = strtok(tempString, " ");
-            token = strtok(NULL, " ");
-            while (token != NULL)
+            status = isLastWord(&token, strtok(strdup(server_message), " "));
+            while (status != -1)
             {
-                printf("%s", token);
-                token = strtok(NULL, " ");
-                if (token != NULL)
-                    printf(" ");
+                if (status == 1)
+                    printf("%s\n", token);
+                else if (status == 0)
+                    printf("%s ", token);
+                status = isLastWord(&token, strtok(NULL, " "));
             }
             break;
         }
+        printf("\n\n\n");
     } while (scelta != 2);
 
     // Close the socket:
