@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
         memset(server_message, '\0', sizeof(server_message));
         sprintf(server_message, "OK %d Inizio del gioco\n", maxTentativi);
-        if (send(client_sock, server_message, strlen(server_message), 0) < 0)
+        if (write(client_sock, server_message, strlen(server_message)) < 0)
         {
             printf("Errore nell'invio del messaggio\n");
         }
@@ -111,43 +111,43 @@ int main(int argc, char *argv[])
         {
             memset(client_message, '\0', sizeof(client_message));
             memset(server_message, '\0', sizeof(server_message));
-            recv(client_sock, client_message, sizeof(client_message), 0);
+            read(client_sock, client_message, sizeof(client_message));
             char *tempString = strdup(client_message);
             char *token = NULL;
             int status = isLastWord(&token, strtok(tempString, " "));
             if (status == -1)
             {
                 sprintf(server_message, "ERR richiesto un comando\n");
-                send(client_sock, server_message, strlen(server_message), 0);
+                write(client_sock, server_message, strlen(server_message));
                 break;
             }
             if (strcmp(token, "QUIT") == 0)
             {
                 sprintf(server_message, "QUIT Alla prossima!\n");
-                send(client_sock, server_message, strlen(server_message), 0);
+                write(client_sock, server_message, strlen(server_message));
                 break;
             }
             if (strcmp(token, "WORD") != 0)
             {
                 sprintf(server_message, "ERR Comando '%s' sconosciuto\n", token);
-                send(client_sock, server_message, strlen(server_message), 0);
+                write(client_sock, server_message, strlen(server_message));
             }
             status = isLastWord(&token, strtok(NULL, " "));
             if (status != 1)
             {
                 sprintf(server_message, "ERR Richiesta una parola\n");
-                send(client_sock, server_message, strlen(server_message), 0);
+                write(client_sock, server_message, strlen(server_message));
             }
             if (strlen(token) != 5)
             {
                 sprintf(server_message, "ERR la parola deve essere di 5 caratteri\n");
-                send(client_sock, server_message, strlen(server_message), 0);
+                write(client_sock, server_message, strlen(server_message));
                 break;
             }
             if (strcmp(token, parole[parola]) == 0)
             {
                 sprintf(server_message, "OK PERFECT\n");
-                send(client_sock, server_message, strlen(server_message), 0);
+                write(client_sock, server_message, strlen(server_message));
                 break;
             }
 
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
             {
                 memset(server_message, '\0', sizeof(server_message));
                 sprintf(server_message, "END %d %s\n", maxTentativi, parole[parola]);
-                send(client_sock, server_message, strlen(server_message), 0);
+                write(client_sock, server_message, strlen(server_message));
                 break;
             }
 
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
                 if (token[j] < 'a' || token[j] > 'z')
                 {
                     sprintf(server_message, "ERR caratteri accettati: 'a'->'z'\n");
-                    send(client_sock, server_message, strlen(server_message), 0);
+                    write(client_sock, server_message, strlen(server_message));
                     err = 1;
                     break;
                 }
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
             if (err == 1)
                 break;
             sprintf(server_message, "OK %d %s\n", i + 1, res);
-            send(client_sock, server_message, strlen(server_message), 0);
+            write(client_sock, server_message, strlen(server_message));
         }
 
         // Closing the socket:
