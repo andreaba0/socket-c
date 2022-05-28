@@ -42,6 +42,11 @@ int main(int argc, char *argv[])
     }
     if (argc < 3)
         maxTentativi = 6;
+    else if (atoi(argv[2]) < 6 || atoi(argv[2]) > 10)
+    {
+        printf("Numero di tentativi non valido\n");
+        return 2;
+    }
     else
         maxTentativi = atoi(argv[2]);
 
@@ -95,7 +100,7 @@ int main(int argc, char *argv[])
         printf("Client connected at IP: %s and port: %i\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
         memset(server_message, '\0', sizeof(server_message));
-        sprintf(server_message, "OK %s Inizio del gioco\n", argv[2]);
+        sprintf(server_message, "OK %d Inizio del gioco\n", maxTentativi);
         if (send(client_sock, server_message, strlen(server_message), 0) < 0)
         {
             printf("Errore nell'invio del messaggio\n");
@@ -110,7 +115,8 @@ int main(int argc, char *argv[])
             char *tempString = strdup(client_message);
             char *token = NULL;
             int status = isLastWord(&token, strtok(tempString, " "));
-            if(status==-1) {
+            if (status == -1)
+            {
                 sprintf(server_message, "ERR richiesto un comando\n");
                 send(client_sock, server_message, strlen(server_message), 0);
                 break;
