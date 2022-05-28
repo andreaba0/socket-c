@@ -125,16 +125,10 @@ int main(int argc, char *argv[])
             }
             if (strcmp(token, "END") == 0)
             {
-                printf("Numvero tentativi raggiunto\n");
+                printf("Numero tentativi raggiunto\n");
                 status = isLastWord(&token, strtok(NULL, " "));
-                while (status != -1)
-                {
-                    if (status == 1)
-                        printf("%s\n", token);
-                    else if (status == 0)
-                        printf("%s ", token);
-                    status = isLastWord(&token, strtok(NULL, " "));
-                }
+                status = isLastWord(&token, strtok(NULL, " "));
+                printf("La parola era: %s\n", token);
                 scelta = 2;
                 break;
             }

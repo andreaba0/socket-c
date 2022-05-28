@@ -80,99 +80,118 @@ int main(int argc, char *argv[])
     }
     printf("\nListening for incoming connections.....\n");
 
-    // Accept an incoming connection:
-    client_size = sizeof(client_addr);
-    client_sock = accept(socket_desc, (struct sockaddr *)&client_addr, &client_size);
-
-    if (client_sock < 0)
+    while (1)
     {
-        printf("Can't accept\n");
-        return -1;
-    }
-    printf("Client connected at IP: %s and port: %i\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-    memset(server_message, '\0', sizeof(server_message));
-    sprintf(server_message, "OK %s Inizio del gioco\n", argv[2]);
-    if (send(client_sock, server_message, strlen(server_message), 0) < 0)
-    {
-        printf("Errore nell'invio del messaggio\n");
-    }
-    int parola = rand() % 6;
-    printf("p: %d\n", parola);
+        // Accept an incoming connection:
+        client_size = sizeof(client_addr);
+        client_sock = accept(socket_desc, (struct sockaddr *)&client_addr, &client_size);
 
-    for (int i = 0; i < maxTentativi + 1; i++)
-    {
-        memset(client_message, '\0', sizeof(client_message));
+        if (client_sock < 0)
+        {
+            printf("Can't accept\n");
+            return -1;
+        }
+        printf("Client connected at IP: %s and port: %i\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
         memset(server_message, '\0', sizeof(server_message));
-        if (i == maxTentativi)
+        sprintf(server_message, "OK %s Inizio del gioco\n", argv[2]);
+        if (send(client_sock, server_message, strlen(server_message), 0) < 0)
         {
-            sprintf(server_message, "END %d %s\n", maxTentativi, parole[parola]);
-            send(client_sock, server_message, strlen(server_message), 0);
-            break;
+            printf("Errore nell'invio del messaggio\n");
         }
-        recv(client_sock, client_message, sizeof(client_message), 0);
-        char *tempString = strdup(client_message);
-        char *token = NULL;
-        int status = isLastWord(&token, strtok(tempString, " "));
-        if (status == -1 || status == 1)
+        int parola = rand() % 6;
+
+        for (int i = 0; i < maxTentativi; i++)
         {
-            sprintf(server_message, "ERR Richiesto un comando\n");
-            send(client_sock, server_message, strlen(server_message), 0);
-        }
-        if (strcmp(token, "QUIT") == 0)
-        {
-            sprintf(server_message, "QUIT Alla prossima!\n");
-            send(client_sock, server_message, strlen(server_message), 0);
-            break;
-        }
-        if (strcmp(token, "WORD") != 0)
-        {
-            sprintf(server_message, "ERR Comando '%s' sconosciuto\n", token);
-            send(client_sock, server_message, strlen(server_message), 0);
-        }
-        status = isLastWord(&token, strtok(NULL, " "));
-        printf("p: %s\n", token);
-        if (status != 1)
-        {
-            sprintf(server_message, "ERR Richiesta una parola\n");
-            send(client_sock, server_message, strlen(server_message), 0);
-        }
-        if (strlen(token) != 5)
-        {
-            sprintf(server_message, "ERR la parola deve essere di 5 caratteri\n");
-            send(client_sock, server_message, strlen(server_message), 0);
-            break;
-        }
-        if (strcmp(token, parole[parola]) == 0)
-        {
-            sprintf(server_message, "OK PERFECT\n");
-            send(client_sock, server_message, strlen(server_message), 0);
-            break;
-        }
-        char res[6];
-        memset(res, '\0', sizeof(res));
-        for(int j=0;j<strlen(token);j++) {
-            if(token[j]==parole[parola][j]) {
-                res[j]='*';
-                continue;
+            memset(client_message, '\0', sizeof(client_message));
+            memset(server_message, '\0', sizeof(server_message));
+            recv(client_sock, client_message, sizeof(client_message), 0);
+            char *tempString = strdup(client_message);
+            char *token = NULL;
+            int status = isLastWord(&token, strtok(tempString, " "));
+            if (status == -1 || status == 1)
+            {
+                sprintf(server_message, "ERR comando: '%s' sconosciuto\n", token);
+                send(client_sock, server_message, strlen(server_message), 0);
             }
-            int k;
-            for(k=0;k<strlen(parole[parola]);k++) {
-                if(token[j]==parole[parola][k]) {
-                    res[j]='+';
+            if (strcmp(token, "QUIT") == 0)
+            {
+                sprintf(server_message, "QUIT Alla prossima!\n");
+                send(client_sock, server_message, strlen(server_message), 0);
+                break;
+            }
+            if (strcmp(token, "WORD") != 0)
+            {
+                sprintf(server_message, "ERR Comando '%s' sconosciuto\n", token);
+                send(client_sock, server_message, strlen(server_message), 0);
+            }
+            status = isLastWord(&token, strtok(NULL, " "));
+            if (status != 1)
+            {
+                sprintf(server_message, "ERR Richiesta una parola\n");
+                send(client_sock, server_message, strlen(server_message), 0);
+            }
+            if (strlen(token) != 5)
+            {
+                sprintf(server_message, "ERR la parola deve essere di 5 caratteri\n");
+                send(client_sock, server_message, strlen(server_message), 0);
+                break;
+            }
+            if (strcmp(token, parole[parola]) == 0)
+            {
+                sprintf(server_message, "OK PERFECT\n");
+                send(client_sock, server_message, strlen(server_message), 0);
+                break;
+            }
+
+            if (i + 1 == maxTentativi)
+            {
+                memset(server_message, '\0', sizeof(server_message));
+                sprintf(server_message, "END %d %s\n", maxTentativi, parole[parola]);
+                send(client_sock, server_message, strlen(server_message), 0);
+                break;
+            }
+
+            char res[6];
+            memset(res, '\0', sizeof(res));
+            int err = 0;
+            for (int j = 0; j < strlen(token); j++)
+            {
+                if (token[j] < 'a' || token[j] > 'z')
+                {
+                    sprintf(server_message, "ERR caratteri accettati: 'a'->'z'\n");
+                    send(client_sock, server_message, strlen(server_message), 0);
+                    err = 1;
                     break;
                 }
+                if (token[j] == parole[parola][j])
+                {
+                    res[j] = '*';
+                    continue;
+                }
+                int k;
+                for (k = 0; k < strlen(parole[parola]); k++)
+                {
+                    if (token[j] == parole[parola][k])
+                    {
+                        res[j] = '+';
+                        break;
+                    }
+                }
+                if (k != strlen(parole[parola]))
+                    continue;
+                res[j] = '_';
             }
-            if(k!=strlen(parole[parola])) continue;
-            res[j]='_';
+            if (err == 1)
+                break;
+            sprintf(server_message, "OK %d %s\n", i + 1, res);
+            send(client_sock, server_message, strlen(server_message), 0);
         }
-        if(res[5]=='\0') printf("corretto\n");
-        sprintf(server_message, "OK %d %s\n", i + 1, res);
-        send(client_sock, server_message, strlen(server_message), 0);
-    }
 
-    // Closing the socket:
-    close(client_sock);
+        // Closing the socket:
+        close(client_sock);
+    }
     close(socket_desc);
 
     return 0;
