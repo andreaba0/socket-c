@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
             char *tempString = strdup(client_message);
             char *token = NULL;
             int status = isLastWord(&token, strtok(tempString, " "));
-            if (status == -1 || status == 1)
-            {
-                sprintf(server_message, "ERR comando: '%s' sconosciuto\n", token);
+            if(status==-1) {
+                sprintf(server_message, "ERR richiesto un comando\n");
                 send(client_sock, server_message, strlen(server_message), 0);
+                break;
             }
             if (strcmp(token, "QUIT") == 0)
             {

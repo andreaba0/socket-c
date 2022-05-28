@@ -149,6 +149,7 @@ int main(int argc, char *argv[])
             send(socket_desc, client_message, strlen(client_message), 0);
             recv(socket_desc, server_message, sizeof(server_message), 0);
             status = isLastWord(&token, strtok(strdup(server_message), " "));
+            status = isLastWord(&token, strtok(NULL, " "));
             while (status != -1)
             {
                 if (status == 1)
