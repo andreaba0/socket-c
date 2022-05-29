@@ -1,12 +1,15 @@
 CC = gcc
 CFLAGS = -g -Wall
 
-all: clientsocket serversocket
+all: clientsocket singleserversocket multiserversocket
 
 clientsocket: client.c
 	$(CC) $(CFLAGS) client.c -o clientsocket.out
-serversocket: server.c
-	$(CC) $(CFLAGS) server.c -o serversocket.out
+singleserversocket: single-thread/server.c
+	$(CC) $(CFLAGS) single-thread/server.c -o single.out
+
+multiserversocket: multi-thread/server.c
+	$(CC) $(CFLAGS) -pthread multi-thread/server.c -o multi.out
 
 clean:
 	rm -f clientsocket.out serversocket.out
