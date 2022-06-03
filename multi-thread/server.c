@@ -28,6 +28,17 @@ int isLastWord(char **dest, char *string)
     }
 }
 
+typedef struct server_params {
+    int maxTentativi;
+    char*host;
+    int port;
+} server_args;
+
+typedef struct pthread_arg_admin
+{
+
+} pthread_arg_admin;
+
 typedef struct pthread_arg_t
 {
     unsigned int client_sock;
@@ -36,6 +47,7 @@ typedef struct pthread_arg_t
 char *parole[6] = {"etere", "fessa", "situa", "razzi", "mezzo", "tende"};
 int thread_number = 0;
 pthread_mutex_t thread_n;
+int clientNumber = 0;
 
 void *pthread_routine(void *args)
 {
@@ -44,13 +56,12 @@ void *pthread_routine(void *args)
     int client_sock = localArgs->client_sock;
     free(args);
 
-    pthread_mutex_lock(&thread_n);
-    thread_number=thread_number+1;
-    pthread_mutex_unlock(&thread_n);
-
     char server_message[256], client_message[256];
     memset(server_message, '\0', sizeof(server_message));
+    pthread_mutex_lock(&thread_n);
+    thread_number = thread_number + 1;
     sprintf(server_message, "OK %d Thread: %d, Inizio del gioco\n", maxTentativi, thread_number);
+    pthread_mutex_unlock(&thread_n);
     if (write(client_sock, server_message, strlen(server_message)) < 0)
     {
         printf("Errore nell'invio del messaggio\n");
@@ -149,14 +160,68 @@ void *pthread_routine(void *args)
     return NULL;
 }
 
+void *pthread_server_routine(void *argv)
+{
+    server_args *args = (server_args*) argv;
+    unsigned int socket_desc, client_sock, client_size;
+    struct sockaddr_in server_addr, client_addr;
+    pthread_t pthread;
+    pthread_args *thread_args;
+    socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (socket_desc < 0)
+    {
+        printf("Error while creating socket\n");
+        return NULL;
+    }
+    printf("Socket created successfully\n");
+
+    // Set port and IP:
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(args->port);
+    server_addr.sin_addr.s_addr = inet_addr(args->host);
+
+    // Bind to the set port and IP:
+    if (bind(socket_desc, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    {
+        printf("Couldn't bind to the port\n");
+        return NULL;
+    }
+    printf("Done with binding\n");
+
+    // Listen for clients:
+    if (listen(socket_desc, 1) < 0)
+    {
+        printf("Error while listening\n");
+        return NULL;
+    }
+    printf("\nListening for incoming connections.....\n");
+    while (1)
+    {
+
+        // Accept an incoming connection:
+        client_size = sizeof(client_addr);
+        client_sock = accept(socket_desc, (struct sockaddr *)&client_addr, &client_size);
+
+        if (client_sock < 0)
+        {
+            printf("Can't accept\n");
+            return NULL;
+        }
+        printf("Client connected at IP: %s and port: %i\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        thread_args = malloc(sizeof(pthread_args));
+        thread_args->client_sock = client_sock;
+        thread_args->maxTentativi = args->maxTentativi;
+        pthread_create(&pthread, NULL, &pthread_routine, (void *)thread_args);
+    }
+    close(socket_desc);
+}
+
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
-    unsigned int socket_desc, client_sock, client_size;
-    struct sockaddr_in server_addr, client_addr;
     int maxTentativi;
-    pthread_t pthread;
-    pthread_args *args;
+    pthread_t pthread_server;
 
     if (argc < 2 || argc > 4)
     {
@@ -172,61 +237,42 @@ int main(int argc, char *argv[])
     }
     else
         maxTentativi = atoi(argv[2]);
-    
-    char*host;
-    if(argc!=4) host = strdup("127.0.0.1");
-    else host = strdup(argv[3]);
 
-    // Create socket:
-    socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+    char *host;
+    if (argc != 4)
+        host = strdup("127.0.0.1");
+    else
+        host = strdup(argv[3]);
 
-    if (socket_desc < 0)
-    {
-        printf("Error while creating socket\n");
-        return -1;
-    }
-    printf("Socket created successfully\n");
+    server_args*server_args = malloc(sizeof(server_args));
 
-    // Set port and IP:
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(atoi(argv[1]));
-    server_addr.sin_addr.s_addr = inet_addr(host);
+    server_args->maxTentativi=maxTentativi;
+    server_args->host=host;
+    server_args->port=atoi(argv[1]);
 
-    // Bind to the set port and IP:
-    if (bind(socket_desc, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-    {
-        printf("Couldn't bind to the port\n");
-        return -1;
-    }
-    printf("Done with binding\n");
-
-    // Listen for clients:
-    if (listen(socket_desc, 1) < 0)
-    {
-        printf("Error while listening\n");
-        return -1;
-    }
-    printf("\nListening for incoming connections.....\n");
-
-    while (1)
-    {
-
-        // Accept an incoming connection:
-        client_size = sizeof(client_addr);
-        client_sock = accept(socket_desc, (struct sockaddr *)&client_addr, &client_size);
-
-        if (client_sock < 0)
-        {
-            printf("Can't accept\n");
-            return -1;
+    int scelta;
+    do {
+        do {
+            printf("\n\n");
+            printf("Menu\n");
+            printf("1) Avvia il server\n");
+            printf("2) Chiudi il server\n");
+            printf("3) Lista utenti arrivi\n");
+            printf("4) Esci\n");
+            scanf("%d", &scelta);
+        }while(scelta<1||scelta>4);
+        switch(scelta) {
+            case 1:
+                pthread_create(&pthread_server, NULL, &pthread_server_routine, (void*)server_args);
+                break;
+            case 2:
+                pthread_cancel(pthread_server);
+                break;
+            case 3:
+                printf("Empty\n");
         }
-        printf("Client connected at IP: %s and port: %i\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-        args = (pthread_args*) malloc(sizeof *args);
-        args->client_sock = client_sock;
-        args->maxTentativi = maxTentativi;
-        pthread_create(&pthread, NULL, &pthread_routine, (void*)args);
-    }
-    close(socket_desc);
+    }while(scelta!=4);
+    //pthread_join(pthread_server, NULL);
 
     return 0;
 }

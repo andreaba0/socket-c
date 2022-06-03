@@ -29,6 +29,7 @@ int isLastWord(char **dest, char *string)
 
 int main(int argc, char *argv[])
 {
+    int messageStatus;
     srand(time(NULL));
     char *parole[6] = {"etere", "fessa", "situa", "razzi", "mezzo", "tende"};
     unsigned int socket_desc, client_sock, client_size;
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
         sprintf(server_message, "OK %d Inizio del gioco\n", maxTentativi);
         if (write(client_sock, server_message, strlen(server_message)) < 0)
         {
-            printf("Errore nell'invio del messaggio\n");
+            printf("Errore nell'invio del messaggio di apertura\n");
         }
         int parola = rand() % 6;
 
@@ -118,36 +119,74 @@ int main(int argc, char *argv[])
             if (status == -1)
             {
                 sprintf(server_message, "ERR richiesto un comando\n");
-                write(client_sock, server_message, strlen(server_message));
+                messageStatus = write(client_sock, server_message, strlen(server_message));
+                if (messageStatus < 0)
+                {
+                    printf("Errore nell'invio del messaggio\n");
+                    i = maxTentativi + 1;
+                    break;
+                }
                 break;
             }
             if (strcmp(token, "QUIT") == 0)
             {
                 sprintf(server_message, "QUIT Alla prossima!\n");
-                write(client_sock, server_message, strlen(server_message));
+                messageStatus = write(client_sock, server_message, strlen(server_message));
+                if (messageStatus < 0)
+                {
+                    printf("Errore nell'invio del messaggio\n");
+                    i = maxTentativi + 1;
+                    break;
+                }
                 break;
             }
             if (strcmp(token, "WORD") != 0)
             {
                 sprintf(server_message, "ERR Comando '%s' sconosciuto\n", token);
-                write(client_sock, server_message, strlen(server_message));
+                messageStatus = write(client_sock, server_message, strlen(server_message));
+                if (messageStatus < 0)
+                {
+                    printf("Errore nell'invio del messaggio\n");
+                    i = maxTentativi + 1;
+                    break;
+                }
+                break;
             }
             status = isLastWord(&token, strtok(NULL, " "));
             if (status != 1)
             {
                 sprintf(server_message, "ERR Richiesta una parola\n");
-                write(client_sock, server_message, strlen(server_message));
+                messageStatus = write(client_sock, server_message, strlen(server_message));
+                if (messageStatus < 0)
+                {
+                    printf("Errore nell'invio del messaggio\n");
+                    i = maxTentativi + 1;
+                    break;
+                }
+                break;
             }
             if (strlen(token) != 5)
             {
                 sprintf(server_message, "ERR la parola deve essere di 5 caratteri\n");
-                write(client_sock, server_message, strlen(server_message));
+                messageStatus = write(client_sock, server_message, strlen(server_message));
+                if (messageStatus < 0)
+                {
+                    printf("Errore nell'invio del messaggio\n");
+                    i = maxTentativi + 1;
+                    break;
+                }
                 break;
             }
             if (strcmp(token, parole[parola]) == 0)
             {
                 sprintf(server_message, "OK PERFECT\n");
-                write(client_sock, server_message, strlen(server_message));
+                messageStatus = write(client_sock, server_message, strlen(server_message));
+                if (messageStatus < 0)
+                {
+                    printf("Errore nell'invio del messaggio\n");
+                    i = maxTentativi + 1;
+                    break;
+                }
                 break;
             }
 
@@ -155,7 +194,13 @@ int main(int argc, char *argv[])
             {
                 memset(server_message, '\0', sizeof(server_message));
                 sprintf(server_message, "END %d %s\n", maxTentativi, parole[parola]);
-                write(client_sock, server_message, strlen(server_message));
+                messageStatus = write(client_sock, server_message, strlen(server_message));
+                if (messageStatus < 0)
+                {
+                    printf("Errore nell'invio del messaggio\n");
+                    i = maxTentativi + 1;
+                    break;
+                }
                 break;
             }
 
@@ -167,7 +212,13 @@ int main(int argc, char *argv[])
                 if (token[j] < 'a' || token[j] > 'z')
                 {
                     sprintf(server_message, "ERR caratteri accettati: 'a'->'z'\n");
-                    write(client_sock, server_message, strlen(server_message));
+                    messageStatus = write(client_sock, server_message, strlen(server_message));
+                    if (messageStatus < 0)
+                    {
+                        printf("Errore nell'invio del messaggio\n");
+                        i = maxTentativi + 1;
+                        break;
+                    }
                     err = 1;
                     break;
                 }
@@ -192,7 +243,13 @@ int main(int argc, char *argv[])
             if (err == 1)
                 break;
             sprintf(server_message, "OK %d %s\n", i + 1, res);
-            write(client_sock, server_message, strlen(server_message));
+            messageStatus = write(client_sock, server_message, strlen(server_message));
+            if (messageStatus < 0)
+            {
+                printf("Errore nell'invio del messaggio\n");
+                i = maxTentativi + 1;
+                break;
+            }
         }
 
         // Closing the socket:
