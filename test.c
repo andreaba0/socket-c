@@ -21,6 +21,9 @@ int isLastWord(char **dest, char *string)
 
 int main(int argc, char *argv[])
 {
+    char*prova = "a2";
+    int x = atoi(prova);
+    printf("%d\n", x);
     for(int i=0;i<10;i++) {
         if(i%2==0) continue;
         printf("n: %d\n", i);

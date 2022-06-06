@@ -47,11 +47,11 @@ int main(int argc, char *argv[])
 
     if (socket_desc < 0)
     {
-        printf("Unable to create socket\n");
+        printf("Impossibile creare il socket\n");
         return -1;
     }
 
-    printf("Socket created successfully\n");
+    printf("Socket creato con successo\n");
 
     // Set port and IP the same as server-side:
     server_addr.sin_family = AF_INET;
@@ -61,16 +61,23 @@ int main(int argc, char *argv[])
     // Send connection request to server:
     if (connect(socket_desc, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        printf("Unable to connect\n");
+        printf("Impossibile connettersi\n");
         return -1;
     }
-    printf("Connected with server successfully\n");
+    printf("Connessione al server riuscita\n");
+    printf("In attesa della risposta dal server...\n");
     int status;
     char *token = NULL;
     char tempString[6];
+    int socketStatus;
     memset(tempString, '\0', sizeof(tempString));
 
-    read(socket_desc, server_message, sizeof(server_message));
+    socketStatus = read(socket_desc, server_message, sizeof(server_message));
+    if (socketStatus < 0)
+    {
+        printf("Errore nella lettura del messaggio dal server\n");
+        exit(1);
+    }
     status = isLastWord(&token, strtok(strdup(server_message), " "));
     status = isLastWord(&token, strtok(NULL, " "));
     int maxTentativi = atoi(token);
@@ -88,17 +95,21 @@ int main(int argc, char *argv[])
     }
 
     int scelta;
+    int tentativo=0;
     do
     {
         memset(server_message, '\0', sizeof(server_message));
         memset(client_message, '\0', sizeof(client_message));
         do
         {
+            printf("\n\n\nTentativo: %2d/%2d  ======\n", tentativo+1, maxTentativi);
             printf("1: Inserisci parola\n");
             printf("2: Esci\n");
             printf("Enter message: ");
-            scanf("%d", &scelta);
+            scanf("%s", tempString);
+            scelta = atoi(tempString);
         } while (scelta < 1 || scelta > 2);
+        printf("\n\n");
         switch (scelta)
         {
         case 1:
@@ -106,7 +117,17 @@ int main(int argc, char *argv[])
             scanf("%s", tempString);
             sprintf(client_message, "WORD %s\n", tempString);
             write(socket_desc, client_message, strlen(client_message));
+            if (socketStatus < 0)
+            {
+                printf("Errore nell'invio del messaggio al server\n");
+                exit(1);
+            }
             read(socket_desc, server_message, sizeof(server_message));
+            if (socketStatus < 0)
+            {
+                printf("Errore nella lettura del messaggio dal server\n");
+                exit(1);
+            }
             status = isLastWord(&token, strtok(strdup(server_message), " "));
             if (strcmp(token, "ERR") == 0)
             {
@@ -139,15 +160,25 @@ int main(int argc, char *argv[])
                 scelta = 2;
                 break;
             }
-            printf("Numero tentativo: %d/%d\n", atoi(token), maxTentativi);
+            tentativo=atoi(token);
             status = isLastWord(&token, strtok(NULL, " "));
-            printf("Parola: %s\n", token);
+            printf("Target: %s\n", token);
             break;
         case 2:
             printf("Uscita in corso\n");
             sprintf(client_message, "QUIT\n");
             write(socket_desc, client_message, strlen(client_message));
+            if (socketStatus < 0)
+            {
+                printf("Errore nell'invio del messaggio al server\n");
+                exit(1);
+            }
             read(socket_desc, server_message, sizeof(server_message));
+            if (socketStatus < 0)
+            {
+                printf("Errore nella lettura del messaggio dal server\n");
+                exit(1);
+            }
             status = isLastWord(&token, strtok(strdup(server_message), " "));
             status = isLastWord(&token, strtok(NULL, " "));
             while (status != -1)
@@ -160,6 +191,7 @@ int main(int argc, char *argv[])
             }
             break;
         }
+        printf("========================\n");
         printf("\n\n\n");
     } while (scelta != 2);
 

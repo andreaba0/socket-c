@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 {
     int messageStatus;
     srand(time(NULL));
-    char *parole[6] = {"etere", "fessa", "situa", "razzi", "mezzo", "tende"};
+    char *parole[9] = {"etere", "stato", "cassa", "razzi", "mezzo", "tende", "sasso", "succo", "penna"};
     unsigned int socket_desc, client_sock, client_size;
     struct sockaddr_in server_addr, client_addr;
     char server_message[256], client_message[256];
@@ -60,10 +60,10 @@ int main(int argc, char *argv[])
 
     if (socket_desc < 0)
     {
-        printf("Error while creating socket\n");
+        printf("Errore nella creazione della socket\n");
         return -1;
     }
-    printf("Socket created successfully\n");
+    printf("Socket creata con successo\n");
 
     // Set port and IP:
     server_addr.sin_family = AF_INET;
@@ -73,18 +73,17 @@ int main(int argc, char *argv[])
     // Bind to the set port and IP:
     if (bind(socket_desc, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        printf("Couldn't bind to the port\n");
+        printf("Porta occupata\n");
         return -1;
     }
-    printf("Done with binding\n");
 
     // Listen for clients:
     if (listen(socket_desc, 1) < 0)
     {
-        printf("Error while listening\n");
+        printf("Errore di ascolto\n");
         return -1;
     }
-    printf("\nListening for incoming connections.....\n");
+    printf("\nIn attesa di connessioni...\n");
 
     while (1)
     {
@@ -98,7 +97,7 @@ int main(int argc, char *argv[])
             printf("Can't accept\n");
             return -1;
         }
-        printf("Client connected at IP: %s and port: %i\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        printf("Client connesso con IP: %s e porta: %i\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
         memset(server_message, '\0', sizeof(server_message));
         sprintf(server_message, "OK %d Inizio del gioco\n", maxTentativi);
