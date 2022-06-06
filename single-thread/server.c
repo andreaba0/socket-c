@@ -32,7 +32,8 @@ int main(int argc, char *argv[])
     int messageStatus;
     srand(time(NULL));
     char *parole[9] = {"etere", "stato", "cassa", "razzi", "mezzo", "tende", "sasso", "succo", "penna"};
-    unsigned int socket_desc, client_sock, client_size;
+    int socket_desc, client_sock;
+    unsigned int client_size;
     struct sockaddr_in server_addr, client_addr;
     char server_message[256], client_message[256];
     int maxTentativi;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
     memset(client_message, '\0', sizeof(client_message));
 
     // Create socket:
-    socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+    socket_desc = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (socket_desc < 0)
     {
@@ -206,7 +207,7 @@ int main(int argc, char *argv[])
             char res[6];
             memset(res, '\0', sizeof(res));
             int err = 0;
-            for (int j = 0; j < strlen(token); j++)
+            for (int j = 0; j < (int) strlen(token); j++)
             {
                 if (token[j] < 'a' || token[j] > 'z')
                 {
@@ -227,7 +228,7 @@ int main(int argc, char *argv[])
                     continue;
                 }
                 int k;
-                for (k = 0; k < strlen(parole[parola]); k++)
+                for (k = 0; k < (int) strlen(parole[parola]); k++)
                 {
                     if (token[j] == parole[parola][k])
                     {
@@ -235,7 +236,7 @@ int main(int argc, char *argv[])
                         break;
                     }
                 }
-                if (k != strlen(parole[parola]))
+                if (k != (int) strlen(parole[parola]))
                     continue;
                 res[j] = '_';
             }
